@@ -1,0 +1,12 @@
+torch
+numpy
+pandas
+librosa>=0.10.2
+soundfile
+tqdm
+datasets[audio]>=2.18
+transformers>=4.45
+peft>=0.10
+scikit-learn
+xgboost>=2.1
+huggingface-hub
