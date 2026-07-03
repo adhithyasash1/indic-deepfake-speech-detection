@@ -2,7 +2,7 @@
 
 binary classifier to detect genuine human speech vs tts-synthesized audio across 16 indian languages.
 
-## how it works, in simple terms
+## how it works
 
 when a machine generates speech, it leaves behind subtle fingerprints: pitch that is a little too steady, transitions that are a little too smooth, background texture that is a little too clean. humans rarely notice them, but they are measurable.
 
