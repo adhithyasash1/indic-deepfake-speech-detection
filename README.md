@@ -1,8 +1,8 @@
-# indic deepfake speech detection
+# Indic Deepfake Speech Detection
 
-binary classifier to detect genuine human speech vs tts-synthesized audio across 16 indian languages.
+Binary classifier to detect genuine human speech vs tts-synthesized audio across 16 indian languages.
 
-## how it works
+## How it Works
 
 when a machine generates speech, it leaves behind subtle fingerprints: pitch that is a little too steady, transitions that are a little too smooth, background texture that is a little too clean. humans rarely notice them, but they are measurable.
 
@@ -15,7 +15,7 @@ a gradient-boosted tree model (xgboost) then combines both views, plus simple te
 
 to keep the evaluation honest, the training data is split into 5 folds and each clip is only ever described by a model that never saw it during training (out-of-fold). the 5 fold models also double as a free ensemble at prediction time, and the final score blends the tree model with the neural network's own opinion - whichever mix works best on held-out data. a suspiciously perfect score is treated as a bug report, not a result - see [results](#results) below for what that turned up.
 
-## project structure
+## Project Structure
 
 * [notebooks/model_training.ipynb](notebooks/model_training.ipynb) - main training pipeline. caches waveforms, extracts handcrafted features, fine-tunes `ai4bharat/indicwav2vec-hindi` with lora across 5 group-aware out-of-fold splits, trains an xgboost classifier on the fused features, blends predictions, exports the best fold to onnx, and scores generalization on a held-out synthesis engine.
 * [scripts/validate_on_extra_dataset.py](scripts/validate_on_extra_dataset.py) - standalone local re-run of the out-of-distribution check against downloaded kaggle artifacts, without needing the full notebook or GPU.
@@ -25,7 +25,7 @@ to keep the evaluation honest, the training data is split into 5 folds and each 
 * [requirements.txt](requirements.txt) - dependency list.
 * [.gitignore](.gitignore) - ignores local data, checkouts, and system files.
 
-## pipeline design
+## Design
 
 * **waveform cache**: every clip is decoded, resampled to 16 khz, normalized, and cropped/padded to 5 s exactly once, then stored as int16 pcm in a disk-backed memmap. every later stage reads from this cache instead of re-decoding audio - the single biggest speed win in the pipeline.
 * **handcrafted features (36-d)**: pitch mean/std, spectral flux, phase coherence, harmonics-to-noise ratio, rms mean/std, spectral flatness mean/std, duration, and mean/std of 13 mfccs - extracted in parallel across all cpu cores.
@@ -35,7 +35,7 @@ to keep the evaluation honest, the training data is split into 5 folds and each 
 * **classifier + blend**: xgboost trains on [oof embeddings | handcrafted | metadata] with early stopping and class-imbalance weighting; the final prediction blends its probability with the fold ensemble's own output, whichever mix wins on the validation split.
 * **onnx export**: the fold with the best held-out auc is merged and exported for deployment without pytorch or peft.
 
-## results
+## Results
 
 leak-free 5-fold out-of-fold evaluation on the main challenge dataset (31k clips, 16 languages), vs. the same trained ensemble scored on a held-out dataset built with a different tts engine and a different genuine-speech source it never trained on:
 
@@ -49,7 +49,7 @@ the in-distribution number is real, but narrow: it reflects the model fingerprin
 
 full per-language breakdown, per-fold aucs, onnx deployment numbers (1.26 gb, <0.01% output difference vs pytorch, ~1.3s/clip on cpu), and the out-of-distribution report are written to `evaluation_report.json`, `per_language_metrics.csv`, `extra_dataset_ood_report.json`, and a single readable `RUN_REPORT.md` at the end of the run.
 
-## dataset info
+## Dataset
 
 * **main dataset**: SherryT997/IndicTTS-Deepfake-Challenge-Data (~31k train / ~2.6k test samples, CC-BY-4.0), used for both training and the leaderboard submission.
 * **extra dataset**: springlab's open genuine-speech corpuses (1,200 recordings) plus synthetic clips from `kenpath/svara-tts-v1` + snac vocoders (140 clips). **not used for training** - a different recording pipeline for the genuine half and a different tts engine for the synthetic half made it a source/channel shortcut risk when merged in, so it's kept aside and used only as the out-of-distribution check above.
